@@ -17,9 +17,10 @@ import re
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from utils.file import load_config
-from models.audio_tokenizer import BiCodecTokenizer
-from utils.token_parser import TASK_TOKEN_MAP
+
+from sparktts.utils.file import load_config
+from sparktts.models.audio_tokenizer import BiCodecTokenizer
+from sparktts.utils.token_parser import TASK_TOKEN_MAP
 
 
 class SparkTTS:

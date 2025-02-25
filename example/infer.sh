@@ -33,10 +33,10 @@ prompt_speech_path="example/prompt_audio.wav"
 # Change directory to the root directory
 cd "$root_dir" || exit
 
-source utils/parse_options.sh
+source sparktts/utils/parse_options.sh
 
 # Run inference for each JSON file
-python inference.py \
+python -m cli.inference \
     --text "${text}" \
     --device "${device}" \
     --save_dir "${save_dir}" \

@@ -19,8 +19,8 @@ import torch.nn as nn
 
 from typing import List
 
-from modules.blocks.vocos import VocosBackbone
-from modules.blocks.samper import SamplingBlock
+from sparktts.modules.blocks.vocos import VocosBackbone
+from sparktts.modules.blocks.samper import SamplingBlock
 
 
 class Decoder(nn.Module):

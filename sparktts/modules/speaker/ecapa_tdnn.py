@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import modules.speaker.pooling_layers as pooling_layers
+import sparktts.modules.speaker.pooling_layers as pooling_layers
 
 
 class Res2Conv1dReluBn(nn.Module):

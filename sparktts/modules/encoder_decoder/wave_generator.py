@@ -17,7 +17,7 @@
 
 import torch.nn as nn
 
-from modules.blocks.layers import (
+from sparktts.modules.blocks.layers import (
     Snake1d,
     WNConv1d,
     ResidualUnit,

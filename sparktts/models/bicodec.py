@@ -20,12 +20,12 @@ from typing import Dict, Any
 from omegaconf import DictConfig
 from safetensors.torch import load_file
 
-from utils.file import load_config
-from modules.speaker.speaker_encoder import SpeakerEncoder
-from modules.encoder_decoder.feat_encoder import Encoder
-from modules.encoder_decoder.feat_decoder import Decoder
-from modules.encoder_decoder.wave_generator import WaveGenerator
-from modules.vq.factorized_vector_quantize import FactorizedVectorQuantize
+from sparktts.utils.file import load_config
+from sparktts.modules.speaker.speaker_encoder import SpeakerEncoder
+from sparktts.modules.encoder_decoder.feat_encoder import Encoder
+from sparktts.modules.encoder_decoder.feat_decoder import Decoder
+from sparktts.modules.encoder_decoder.wave_generator import WaveGenerator
+from sparktts.modules.vq.factorized_vector_quantize import FactorizedVectorQuantize
 
 
 class BiCodec(nn.Module):
