@@ -12,16 +12,35 @@ def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Run TTS inference.")
 
-    parser.add_argument("--model_dir", type=str, default="pretrained_models/Spark-TTS-0.5B",
-                        help="Path to the model directory")
-    parser.add_argument("--save_dir", type=str, default="example/results",
-                        help="Directory to save generated audio files")
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default="pretrained_models/Spark-TTS-0.5B",
+        help="Path to the model directory",
+    )
+    parser.add_argument(
+        "--save_dir",
+        type=str,
+        default="example/results",
+        help="Directory to save generated audio files",
+    )
     parser.add_argument("--device", type=int, default=0, help="CUDA device number")
-    parser.add_argument("--text", type=str, required=True, help="Text for TTS generation")
+    parser.add_argument(
+        "--text", type=str, required=True, help="Text for TTS generation"
+    )
     parser.add_argument("--prompt_text", type=str, help="Transcript of prompt audio")
-    parser.add_argument("--prompt_speech_path", type=str, required=True,
-                        help="Path to the prompt audio file")
-
+    parser.add_argument(
+        "--prompt_speech_path",
+        type=str,
+        help="Path to the prompt audio file",
+    )
+    parser.add_argument("--gender", choices=["male", "pitch"])
+    parser.add_argument(
+        "--pitch", choices=["very_low", "low", "moderate", "high", "very_high"]
+    )
+    parser.add_argument(
+        "--speed", choices=["very_low", "low", "moderate", "high", "very_high"]
+    )
     return parser.parse_args()
 
 
@@ -47,14 +66,23 @@ def run_tts(args):
 
     # Perform inference and save the output audio
     with torch.no_grad():
-        wav = model.inference(args.text, args.prompt_speech_path, prompt_text=args.prompt_text)
+        wav = model.inference(
+            args.text,
+            args.prompt_speech_path,
+            prompt_text=args.prompt_text,
+            gender=args.gender,
+            pitch=args.pitch,
+            speed=args.speed,
+        )
         sf.write(save_path, wav, samplerate=16000)
 
     logging.info(f"Audio saved at: {save_path}")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     args = parse_args()
     run_tts(args)
