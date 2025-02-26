@@ -7,7 +7,7 @@ results/
 demo/
 # C extensions
 *.so
-
+.gradio/
 # Distribution / packaging
 .Python
 build/
