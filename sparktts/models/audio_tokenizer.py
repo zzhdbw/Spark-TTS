@@ -155,9 +155,9 @@ if __name__ == "__main__":
         model_dir="pretrained_models/Spark-TTS-0.5B",
         device=device,
     )
-    wav_path = "local/zhisheng_prompt.wav"
+    wav_path = "example/prompt_audio.wav"
 
     global_tokens, semantic_tokens = tokenizer.tokenize(wav_path)
 
     wav_rec = tokenizer.detokenize(global_tokens.squeeze(0), semantic_tokens)
-    sf.write("local/wav_rec.wav", wav_rec, 16000)
+    sf.write("example/prompt_recon.wav", wav_rec, 16000)
