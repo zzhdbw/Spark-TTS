@@ -50,7 +50,7 @@ def parse_args():
         type=str,
         help="Path to the prompt audio file",
     )
-    parser.add_argument("--gender", choices=["male", "pitch"])
+    parser.add_argument("--gender", choices=["male", "female"])
     parser.add_argument(
         "--pitch", choices=["very_low", "low", "moderate", "high", "very_high"]
     )
