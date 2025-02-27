@@ -30,6 +30,26 @@ Spark-TTS is an advanced text-to-speech system that uses the power of large lang
 - **Simplicity and Efficiency**: Built entirely on Qwen2.5, Spark-TTS eliminates the need for additional generation models like flow matching. Instead of relying on separate models to generate acoustic features, it directly reconstructs audio from the code predicted by the LLM. This approach streamlines the process, improving efficiency and reducing complexity.
 - **High-Quality Voice Cloning**: Supports zero-shot voice cloning, which means it can replicate a speaker's voice even without specific training data for that voice. This is ideal for cross-lingual and code-switching scenarios, allowing for seamless transitions between languages and voices without requiring separate training for each one.
 - **Bilingual Support**: Supports both Chinese and English, and is capable of zero-shot voice cloning for cross-lingual and code-switching scenarios, enabling the model to synthesize speech in multiple languages with high naturalness and accuracy.
+- **Controllable Speech Generation**: Supports creating virtual speakers by adjusting parameters such as gender, pitch, and speaking rate.
+
+---
+
+<table align="center">
+  <tr>
+    <td align="center"><b>Inference Overview of Voice Cloning</b><br><img src="src/figures/infer_voice_cloning.png" width="80%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Inference Overview of Controlled Generation</b><br><img src="src/figures/infer_control.png" width="80%" /></td>
+  </tr>
+</table>
+
+
+## To-Do List
+
+- [ ] Release the Spark-TTS paper.
+- [ ] Release the training code.
+- [ ] Release the training dataset, VoxBox.
+
 
 ## Install
 **Clone and Install**
@@ -53,7 +73,22 @@ pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --tru
 
 **Model Download**
 
-TBD
+Download via python:
+```python
+from huggingface_hub import snapshot_download
+
+snapshot_download("SparkAudio/Spark-TTS-0.5B", local_dir="pretrained_models/Spark-TTS-0.5B")
+```
+
+Download via git clone:
+```sh
+mkdir -p pretrained_models
+
+# Make sure you have git-lfs installed (https://git-lfs.com)
+git lfs install
+
+git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
+```
 
 **Basic Usage**
 
@@ -62,6 +97,28 @@ You can simply run the demo with the following commands:
 cd example
 bash infer.sh
 ```
+
+Alternatively, you can directly execute the following command in the command line to perform inference：
+
+``` sh
+python -m cli.inference \
+    --text "text to synthesis." \
+    --device 0 \
+    --save_dir "path/to/save/audio" \
+    --model_dir pretrained_models/Spark-TTS-0.5B \
+    --prompt_text "transcript of the prompt audio" \
+    --prompt_speech_path "path/to/prompt_audio"
+```
+
+**UI Usage**
+
+You can start the UI interface by running `python webui.py`, which allows you to perform Voice Cloning and Voice Creation. Voice Cloning supports uploading reference audio or directly recording the audio.
+
+
+| **Voice Cloning** | **Voice Creation** |
+|:-------------------:|:-------------------:|
+| ![Image 1](src/figures/gradio_TTS.png) | ![Image 2](src/figures/gradio_control.png) |
+
 
 ## **Demos**
 

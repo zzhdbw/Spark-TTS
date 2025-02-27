@@ -35,7 +35,7 @@ cd "$root_dir" || exit
 
 source sparktts/utils/parse_options.sh
 
-# Run inference for each JSON file
+# Run inference
 python -m cli.inference \
     --text "${text}" \
     --device "${device}" \
