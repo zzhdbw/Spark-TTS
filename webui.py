@@ -17,6 +17,7 @@ import os
 import torch
 import soundfile as sf
 import logging
+import argparse
 import gradio as gr
 from datetime import datetime
 from cli.SparkTTS import SparkTTS
@@ -71,35 +72,53 @@ def run_tts(
 
     logging.info(f"Audio saved at: {save_path}")
 
-    return save_path, model  # Return model along with audio path
-
-
-def voice_clone(text, model, prompt_text, prompt_wav_upload, prompt_wav_record):
-    """Gradio interface for TTS with prompt speech input."""
-    # Determine prompt speech (from audio file or recording)
-    prompt_speech = prompt_wav_upload if prompt_wav_upload else prompt_wav_record
-    prompt_text = None if len(prompt_text) < 2 else prompt_text
-    audio_output_path, model = run_tts(
-        text, model, prompt_text=prompt_text, prompt_speech=prompt_speech
-    )
-
-    return audio_output_path, model
-
-
-def voice_creation(text, model, gender, pitch, speed):
-    """Gradio interface for TTS with control over voice attributes."""
-    pitch = LEVELS_MAP_UI[int(pitch)]
-    speed = LEVELS_MAP_UI[int(speed)]
-    audio_output_path, model = run_tts(
-        text, model, gender=gender, pitch=pitch, speed=speed
-    )
-    return audio_output_path, model
+    return save_path
 
 
 def build_ui(model_dir, device=0):
+    
+    # Initialize model
+    model = initialize_model(model_dir, device=device)
+
+    # Define callback function for voice cloning
+    def voice_clone(text, prompt_text, prompt_wav_upload, prompt_wav_record):
+        """
+        Gradio callback to clone voice using text and optional prompt speech.
+        - text: The input text to be synthesised.
+        - prompt_text: Additional textual info for the prompt (optional).
+        - prompt_wav_upload/prompt_wav_record: Audio files used as reference.
+        """
+        prompt_speech = prompt_wav_upload if prompt_wav_upload else prompt_wav_record
+        prompt_text_clean = None if len(prompt_text) < 2 else prompt_text
+
+        audio_output_path = run_tts(
+            text,
+            model,
+            prompt_text=prompt_text_clean,
+            prompt_speech=prompt_speech
+        )
+        return audio_output_path
+
+    # Define callback function for creating new voices
+    def voice_creation(text, gender, pitch, speed):
+        """
+        Gradio callback to create a synthetic voice with adjustable parameters.
+        - text: The input text for synthesis.
+        - gender: 'male' or 'female'.
+        - pitch/speed: Ranges mapped by LEVELS_MAP_UI.
+        """
+        pitch_val = LEVELS_MAP_UI[int(pitch)]
+        speed_val = LEVELS_MAP_UI[int(speed)]
+        audio_output_path = run_tts(
+            text,
+            model,
+            gender=gender,
+            pitch=pitch_val,
+            speed=speed_val
+        )
+        return audio_output_path
+
     with gr.Blocks() as demo:
-        # Initialize model
-        model = initialize_model(model_dir, device=device)
         # Use HTML for centered title
         gr.HTML('<h1 style="text-align: center;">Spark-TTS by SparkAudio</h1>')
         with gr.Tabs():
@@ -141,12 +160,11 @@ def build_ui(model_dir, device=0):
                     voice_clone,
                     inputs=[
                         text_input,
-                        gr.State(model),
                         prompt_text_input,
                         prompt_wav_upload,
                         prompt_wav_record,
                     ],
-                    outputs=[audio_output, gr.State(model)],
+                    outputs=[audio_output],
                 )
 
             # Voice Creation Tab
@@ -180,13 +198,56 @@ def build_ui(model_dir, device=0):
                 )
                 create_button.click(
                     voice_creation,
-                    inputs=[text_input_creation, gr.State(model), gender, pitch, speed],
-                    outputs=[audio_output, gr.State(model)],
+                    inputs=[text_input_creation, gender, pitch, speed],
+                    outputs=[audio_output],
                 )
 
     return demo
 
 
+def parse_arguments():
+    """
+    Parse command-line arguments such as model directory and device ID.
+    """
+    parser = argparse.ArgumentParser(description="Spark TTS Gradio server.")
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default="pretrained_models/Spark-TTS-0.5B",
+        help="Path to the model directory."
+    )
+    parser.add_argument(
+        "--device",
+        type=int,
+        default=0,
+        help="ID of the GPU device to use (e.g., 0 for cuda:0)."
+    )
+    parser.add_argument(
+        "--server_name",
+        type=str,
+        default="0.0.0.0",
+        help="Server host/IP for Gradio app."
+    )
+    parser.add_argument(
+        "--server_port",
+        type=int,
+        default=7860,
+        help="Server port for Gradio app."
+    )
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    demo = build_ui(model_dir="pretrained_models/Spark-TTS-0.5B", device=0)
-    demo.launch(server_name="0.0.0.0")
+    # Parse command-line arguments
+    args = parse_arguments()
+
+    # Build the Gradio demo by specifying the model directory and GPU device
+    demo = build_ui(
+        model_dir=args.model_dir,
+        device=args.device
+    )
+
+    # Launch Gradio with the specified server name and port
+    demo.launch(
+        server_name=args.server_name,
+        server_port=args.server_port
+    )

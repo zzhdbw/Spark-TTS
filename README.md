@@ -103,9 +103,9 @@ python -m cli.inference \
     --prompt_speech_path "path/to/prompt_audio"
 ```
 
-**UI Usage**
+**Web UI Usage**
 
-You can start the UI interface by running `python webui.py`, which allows you to perform Voice Cloning and Voice Creation. Voice Cloning supports uploading reference audio or directly recording the audio.
+You can start the UI interface by running `python webui.py --device 0`, which allows you to perform Voice Cloning and Voice Creation. Voice Cloning supports uploading reference audio or directly recording the audio.
 
 
 | **Voice Cloning** | **Voice Creation** |
