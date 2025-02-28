@@ -47,7 +47,8 @@ Spark-TTS is an advanced text-to-speech system that uses the power of large lang
 ## Install
 **Clone and Install**
 
-Here are instructions for installing on Linux. If you're on Windows, please refer to the Windows Installation Guide.
+  Here are instructions for installing on Linux. If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
+*(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
 
 
 - Clone the repo
