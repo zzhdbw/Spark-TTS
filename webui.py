@@ -188,5 +188,5 @@ def build_ui(model_dir, device=0):
 
 
 if __name__ == "__main__":
-    demo = build_ui(model_dir="pretrained_models/Spark-TTS-0.5B", device=5)
-    demo.launch()
+    demo = build_ui(model_dir="pretrained_models/Spark-TTS-0.5B", device=0)
+    demo.launch(server_name="0.0.0.0")
