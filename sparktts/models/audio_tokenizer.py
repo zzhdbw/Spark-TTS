@@ -65,11 +65,11 @@ class BiCodecTokenizer:
 
         if ref_segment_length > wav_length:
             # Repeat and truncate to handle insufficient length
-            wav = np.tile(wav, (1 + ref_segment_length) // wav_length)
+            wav = np.tile(wav, ref_segment_length // wav_length + 1)
 
         return wav[:ref_segment_length]
 
-    def process_audio(self, wav_path: Path) -> Tuple[torch.Tensor, torch.Tensor]:
+    def process_audio(self, wav_path: Path) -> Tuple[np.ndarray, torch.Tensor]:
         """load auido and get reference audio from wav path"""
         wav = load_audio(
             wav_path,
