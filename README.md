@@ -7,7 +7,17 @@
     <b><em>Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens</em></b>
     </p>
     <p>
-    <img src="src/logo.webp" alt="Spark-TTS Logo" style="width: 200px; height: 200px;">
+    <img src="src/logo/SparkTTS.png" alt="Spark-TTS Logo" style="width: 200px; height: 200px;">
+    </p>
+        <p>
+        <img src="src/logo/HKUST.jpg" alt="Institution 1" style="width: 200px; height: 60px;">
+        <img src="src/logo/mobvoi.jpg" alt="Institution 2" style="width: 200px; height: 60px;">
+        <img src="src/logo/SJU.jpg" alt="Institution 3" style="width: 200px; height: 60px;">
+    </p>
+    <p>
+        <img src="src/logo/NTU.jpg" alt="Institution 4" style="width: 200px; height: 60px;">
+        <img src="src/logo/NPU.jpg" alt="Institution 5" style="width: 200px; height: 60px;">
+        <img src="src/logo/SparkAudio2.jpg" alt="Institution 6" style="width: 200px; height: 60px;">
     </p>
     <p>
     </p>
