@@ -19,6 +19,8 @@ import soundfile as sf
 import logging
 import argparse
 import gradio as gr
+import platform
+
 from datetime import datetime
 from cli.SparkTTS import SparkTTS
 from sparktts.utils.token_parser import LEVELS_MAP_UI
@@ -27,7 +29,21 @@ from sparktts.utils.token_parser import LEVELS_MAP_UI
 def initialize_model(model_dir="pretrained_models/Spark-TTS-0.5B", device=0):
     """Load the model once at the beginning."""
     logging.info(f"Loading model from: {model_dir}")
-    device = torch.device(f"cuda:{device}")
+
+    # Determine appropriate device based on platform and availability
+    if platform.system() == "Darwin":
+        # macOS with MPS support (Apple Silicon)
+        device = torch.device(f"mps:{device}")
+        logging.info(f"Using MPS device: {device}")
+    elif torch.cuda.is_available():
+        # System with CUDA support
+        device = torch.device(f"cuda:{device}")
+        logging.info(f"Using CUDA device: {device}")
+    else:
+        # Fall back to CPU
+        device = torch.device("cpu")
+        logging.info("GPU acceleration not available, using CPU")
+
     model = SparkTTS(model_dir, device)
     return model
 
@@ -76,7 +92,7 @@ def run_tts(
 
 
 def build_ui(model_dir, device=0):
-    
+
     # Initialize model
     model = initialize_model(model_dir, device=device)
 
