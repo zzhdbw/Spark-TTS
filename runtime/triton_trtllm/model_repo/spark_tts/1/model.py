@@ -23,31 +23,23 @@
 # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import json
-import torch
-from torch import nn
-from torch.nn.utils.rnn import pad_sequence
-import torch.nn.functional as F
-from torch.utils.dlpack import from_dlpack, to_dlpack
-
-import triton_python_backend_utils as pb_utils
-
-import math
 import os
-from functools import wraps
-
-from transformers import AutoTokenizer
+import re
+from typing import Dict, List, Tuple, Optional, Union
 
 import numpy as np
-import re
-from typing import Tuple
+import torch
+from torch.utils.dlpack import from_dlpack, to_dlpack
+import triton_python_backend_utils as pb_utils
+from transformers import AutoTokenizer
 
-from sparktts.utils.token_parser import LEVELS_MAP, GENDER_MAP, TASK_TOKEN_MAP
-
+from sparktts.utils.token_parser import TASK_TOKEN_MAP
 
 def process_prompt(
     text: str,
-    prompt_text: str = None,
+    prompt_text: Optional[str] = None,
     global_token_ids: torch.Tensor = None,
     semantic_token_ids: torch.Tensor = None,
 ) -> Tuple[str, torch.Tensor]:
@@ -55,27 +47,27 @@ def process_prompt(
     Process input for voice cloning.
 
     Args:
-        text (str): The text input to be converted to speech.
-        prompt_speech_path (Path): Path to the audio file used as a prompt.
-        prompt_text (str, optional): Transcript of the prompt audio.
+        text: The text input to be converted to speech.
+        prompt_text: Transcript of the prompt audio.
+        global_token_ids: Global token IDs extracted from reference audio.
+        semantic_token_ids: Semantic token IDs extracted from reference audio.
 
-    Return:
-        Tuple[str, torch.Tensor]: Input prompt; global tokens
+    Returns:
+        Tuple containing the formatted input prompt and global token IDs.
     """
-
-    # global_token_ids, semantic_token_ids = self.audio_tokenizer.tokenize(
-    #     prompt_speech_path
-    # )
+    # Convert global tokens to string format
     global_tokens = "".join(
         [f"<|bicodec_global_{i}|>" for i in global_token_ids.squeeze()]
     )
-    print(global_tokens, 233333333333, len(global_tokens), "global_tokens")
+
+    
     # Prepare the input tokens for the model
     if prompt_text is not None:
+        # Include semantic tokens when prompt text is provided
         semantic_tokens = "".join(
             [f"<|bicodec_semantic_{i}|>" for i in semantic_token_ids.squeeze()]
         )
-        print(semantic_tokens, 233333333333, len(semantic_tokens), "semantic_tokens")
+
         inputs = [
             TASK_TOKEN_MAP["tts"],
             "<|start_content|>",
@@ -89,6 +81,7 @@ def process_prompt(
             semantic_tokens,
         ]
     else:
+        # Without prompt text, exclude semantic tokens
         inputs = [
             TASK_TOKEN_MAP["tts"],
             "<|start_content|>",
@@ -99,17 +92,31 @@ def process_prompt(
             "<|end_global_token|>",
         ]
 
+    # Join all input components into a single string
     inputs = "".join(inputs)
-
     return inputs, global_token_ids
 
+
 class TritonPythonModel:
+    """Triton Python model for Spark TTS.
+    
+    This model orchestrates the end-to-end TTS pipeline by coordinating
+    between audio tokenizer, LLM, and vocoder components.
+    """
+    
     def initialize(self, args):
+        """Initialize the model.
+        
+        Args:
+            args: Dictionary containing model configuration
+        """
+        # Parse model parameters
         parameters = json.loads(args['model_config'])['parameters']
-        for key, value in parameters.items():
-            parameters[key] = value["string_value"]
-        model_dir = parameters["model_dir"]
-        self.tokenizer = AutoTokenizer.from_pretrained(f"{model_dir}/LLM")
+        model_params = {k: v["string_value"] for k, v in parameters.items()}
+        
+        # Initialize tokenizer
+        llm_tokenizer_dir = model_params["llm_tokenizer_dir"]
+        self.tokenizer = AutoTokenizer.from_pretrained(llm_tokenizer_dir)
         self.device = torch.device("cuda")
         self.decoupled = False
 
@@ -140,7 +147,6 @@ class TritonPythonModel:
         """
         # convert input_ids to numpy, with shape [1, sequence_length]
         input_ids = input_ids.cpu().numpy()
-        print(input_ids.shape, 233333333333, "input_ids")
         max_tokens = 512
         input_dict = {
             "request_output_len": np.array([[max_tokens]], dtype=np.int32),
@@ -153,135 +159,153 @@ class TritonPythonModel:
             "input_ids": input_ids,
             "input_lengths": np.array([[input_ids.shape[1]]], dtype=np.int32),
         }
-        for k, v in input_dict.items():
-            print(k, v.shape, 233333333333, v.dtype)
-        # exit()
+        
+        # Convert inputs to Triton tensors
         input_tensor_list = [
             pb_utils.Tensor(k, v) for k, v in input_dict.items()
         ]
-        # input_tensor_list.append(pb_utils.Tensor.from_dlpack(
-        #     "input_ids", to_dlpack(input_ids)
-        # ))
+        
+        # Create and execute inference request
         llm_request = pb_utils.InferenceRequest(
             model_name="tensorrt_llm",
             requested_output_names=["output_ids", "sequence_length"],
             inputs=input_tensor_list,
         )
-        print("=======================================")
+        
         llm_response = llm_request.exec(decoupled=self.decoupled)
         if llm_response.has_error():
-            raise pb_utils.TritonModelException(
-                llm_response.error().message())
+            raise pb_utils.TritonModelException(llm_response.error().message())
+        
+        # Extract and process output
         output_ids = pb_utils.get_output_tensor_by_name(
             llm_response, "output_ids").as_numpy()
         seq_lens = pb_utils.get_output_tensor_by_name(
             llm_response, "sequence_length").as_numpy()
-        print(seq_lens, 233333333333, "seq_lens")
-        actual_output_ids = output_ids[0][0]
-        actual_output_ids = actual_output_ids[:seq_lens[0][0]]
-        print(actual_output_ids, 233333333333, "actual_output_ids")
+        
+        # Get actual output IDs up to the sequence length
+        actual_output_ids = output_ids[0][0][:seq_lens[0][0]]
+        
         return actual_output_ids
 
     def forward_audio_tokenizer(self, wav, wav_len):
-        # input_tensor_0 = pb_utils.Tensor.
-        # input_tensor_1 = pb_utils.Tensor.from_dlpack("wav_len", to_dlpack(wav_len))
-    
+        """Forward pass through the audio tokenizer component.
+        
+        Args:
+            wav: Input waveform tensor
+            wav_len: Waveform length tensor
+            
+        Returns:
+            Tuple of global and semantic tokens
+        """
         inference_request = pb_utils.InferenceRequest(
             model_name='audio_tokenizer',
             requested_output_names=['global_tokens', 'semantic_tokens'],
             inputs=[wav, wav_len]
         )
+        
         inference_response = inference_request.exec()
         if inference_response.has_error():
             raise pb_utils.TritonModelException(inference_response.error().message())
-        else:
-            global_tokens = pb_utils.get_output_tensor_by_name(inference_response,
-                                                            'global_tokens')
-            global_tokens = torch.utils.dlpack.from_dlpack(global_tokens.to_dlpack()).cpu()
-            semantic_tokens = pb_utils.get_output_tensor_by_name(inference_response,
-                                                            'semantic_tokens')
-            semantic_tokens = torch.utils.dlpack.from_dlpack(semantic_tokens.to_dlpack()).cpu()
-            return global_tokens, semantic_tokens
+        
+        # Extract and convert output tensors
+        global_tokens = pb_utils.get_output_tensor_by_name(inference_response, 'global_tokens')
+        global_tokens = torch.utils.dlpack.from_dlpack(global_tokens.to_dlpack()).cpu()
+        
+        semantic_tokens = pb_utils.get_output_tensor_by_name(inference_response, 'semantic_tokens')
+        semantic_tokens = torch.utils.dlpack.from_dlpack(semantic_tokens.to_dlpack()).cpu()
+        
+        return global_tokens, semantic_tokens
 
-    def forward_vocoder(self, global_token_ids, pred_semantic_ids):
-        global_token_ids = pb_utils.Tensor.from_dlpack("global_tokens", to_dlpack(global_token_ids))
-        pred_semantic_ids = pb_utils.Tensor.from_dlpack("semantic_tokens", to_dlpack(pred_semantic_ids))
+    def forward_vocoder(self, global_token_ids: torch.Tensor, pred_semantic_ids: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the vocoder component.
+        
+        Args:
+            global_token_ids: Global token IDs tensor
+            pred_semantic_ids: Predicted semantic token IDs tensor
+            
+        Returns:
+            Generated waveform tensor
+        """
+        # Convert tensors to Triton format
+        global_token_ids_tensor = pb_utils.Tensor.from_dlpack("global_tokens", to_dlpack(global_token_ids))
+        pred_semantic_ids_tensor = pb_utils.Tensor.from_dlpack("semantic_tokens", to_dlpack(pred_semantic_ids))
+        
+        # Create and execute inference request
         inference_request = pb_utils.InferenceRequest(
             model_name='vocoder',
             requested_output_names=['waveform'],
-            inputs=[global_token_ids, pred_semantic_ids]
+            inputs=[global_token_ids_tensor, pred_semantic_ids_tensor]
         )
+        
         inference_response = inference_request.exec()
         if inference_response.has_error():
             raise pb_utils.TritonModelException(inference_response.error().message())
-        else:
-            waveform = pb_utils.get_output_tensor_by_name(inference_response,
-                                                        'waveform')
-            waveform = torch.utils.dlpack.from_dlpack(waveform.to_dlpack()).cpu()
-            return waveform
+        
+        # Extract and convert output waveform
+        waveform = pb_utils.get_output_tensor_by_name(inference_response, 'waveform')
+        waveform = torch.utils.dlpack.from_dlpack(waveform.to_dlpack()).cpu()
+        
+        return waveform
         
     def execute(self, requests):
-        # reference_text_list, target_text_list, reference_wav_list, reference_wav_ref_clip_list = [], [], [], []
+        """Execute inference on the batched requests.
+        
+        Args:
+            requests: List of inference requests
+            
+        Returns:
+            List of inference responses containing generated audio
+        """
         responses = []
+        
         for request in requests:
+            # Extract input tensors
             wav = pb_utils.get_input_tensor_by_name(request, "reference_wav")
-            wav_len = pb_utils.get_input_tensor_by_name(
-                request, "reference_wav_len")
+            wav_len = pb_utils.get_input_tensor_by_name(request, "reference_wav_len")
+            
+            # Process reference audio through audio tokenizer
             global_tokens, semantic_tokens = self.forward_audio_tokenizer(wav, wav_len)
-            # print(wav_tensor.shape, wav_len.shape, 233333333333)
-            # reference_wav_list.append(wav)
-            # wav_ref_clip = self.get_ref_clip(wav[:, :wav_len])
-            # reference_wav_ref_clip_list.append(wav_ref_clip)
-
-
-            reference_text = pb_utils.get_input_tensor_by_name(
-                request, "reference_text").as_numpy()
+            
+            # Extract text inputs
+            reference_text = pb_utils.get_input_tensor_by_name(request, "reference_text").as_numpy()
             reference_text = reference_text[0][0].decode('utf-8')
-            # reference_text_list.append(reference_text)
-
-            target_text = pb_utils.get_input_tensor_by_name(
-                request, "target_text").as_numpy()
+            
+            target_text = pb_utils.get_input_tensor_by_name(request, "target_text").as_numpy()
             target_text = target_text[0][0].decode('utf-8')
-            # target_text_list.append(target_text)
             
-            # ref_wav_clip_tensor = torch.cat(reference_wav_ref_clip_list, dim=0)
-            # wav2vec2_features = self.model.audio_tokenizer.extract_wav2vec2_features(reference_wav_list)
-            # audio_tokenizer_input_dict = {
-            #     "ref_wav": ref_wav_clip_tensor, # no padding, spaker encoder
-            #     "feat": wav2vec2_features,
-            # }
-            
+            # Prepare prompt for LLM
             prompt, global_token_ids = process_prompt(
                 text=target_text,
                 prompt_text=reference_text,
                 global_token_ids=global_tokens,
                 semantic_token_ids=semantic_tokens,
             )
-            print(semantic_tokens.shape, "semantic_tokens")
-            print(global_tokens.shape, "global_tokens")
-            print(prompt, "prompt", len(prompt))
+            
+            
+            # Tokenize prompt for LLM
             model_inputs = self.tokenizer([prompt], return_tensors="pt").to(self.device)
-            print(model_inputs, "model_inputs")
             input_ids = model_inputs.input_ids.to(torch.int32)
-            print(input_ids.shape, 233333333333, 455555555)
-
+            
+            # Generate semantic tokens with LLM
             generated_ids = self.forward_llm(input_ids)
-            print(generated_ids, "generated_ids", len(generated_ids))
-            predicts = self.tokenizer.batch_decode([generated_ids], skip_special_tokens=True)[0]
-            print(predicts, "predicts", len(predicts))
+            
+            # Decode and extract semantic token IDs from generated text
+            predicted_text = self.tokenizer.batch_decode([generated_ids], skip_special_tokens=True)[0]
             pred_semantic_ids = (
-                torch.tensor([int(token) for token in re.findall(r"bicodec_semantic_(\d+)", predicts)])
+                torch.tensor([int(token) for token in re.findall(r"bicodec_semantic_(\d+)", predicted_text)])
                 .unsqueeze(0).to(torch.int32)
             )
-            print(global_token_ids.shape, "global_token_ids")
-            print(pred_semantic_ids.shape, "pred_semantic_ids")
+            
+
+            # Generate audio with vocoder
             audio = self.forward_vocoder(
                 global_token_ids.to(self.device),
                 pred_semantic_ids.to(self.device),
             )
-
-            audio = pb_utils.Tensor.from_dlpack("waveform", to_dlpack(audio))
-            inference_response = pb_utils.InferenceResponse(output_tensors=[audio])
+            
+            # Prepare response
+            audio_tensor = pb_utils.Tensor.from_dlpack("waveform", to_dlpack(audio))
+            inference_response = pb_utils.InferenceResponse(output_tensors=[audio_tensor])
             responses.append(inference_response)
                              
         return responses

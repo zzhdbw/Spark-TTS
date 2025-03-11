@@ -14,14 +14,14 @@
 
 name: "spark_tts"
 backend: "python"
-max_batch_size: 16
+max_batch_size: ${triton_max_batch_size}
 dynamic_batching {
-    max_queue_delay_microseconds: 1
+    max_queue_delay_microseconds: ${max_queue_delay_microseconds}
 }
 parameters [
   {
-   key: "model_dir", 
-   value: {string_value:"/workspace_yuekai/spark-tts/Spark-TTS/pretrained_models/Spark-TTS-0.5B"}
+   key: "llm_tokenizer_dir", 
+   value: {string_value:"${llm_tokenizer_dir}"}
   }
 ]
 
@@ -59,7 +59,7 @@ output [
 
 instance_group [
   {
-    count: 4
+    count: ${bls_instance_num}
     kind: KIND_CPU
   }
 ]
