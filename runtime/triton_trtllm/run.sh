@@ -15,14 +15,14 @@ model_repo=./model_repo_test
 
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
     echo "Downloading Spark-TTS-0.5B from HuggingFace"
-    hugginface-cli download SparkAudio/Spark-TTS-0.5B --local-dir $huggingface_model_local_dir || exit 1
+    huggingface-cli download SparkAudio/Spark-TTS-0.5B --local-dir $huggingface_model_local_dir || exit 1
     # pip install -r /workspace_yuekai/spark-tts/Spark-TTS/requirements.txt
 fi
 
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
     echo "Converting checkpoint to TensorRT weights"
-    python convert_checkpoint.py --model_dir $huggingface_model_local_dir/LLM \
+    python scripts/convert_checkpoint.py --model_dir $huggingface_model_local_dir/LLM \
                                 --output_dir $trt_weights_dir \
                                 --dtype $trt_dtype || exit 1
 
@@ -61,12 +61,12 @@ fi
 
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
     echo "Running client"
-    num_task=4
+    num_task=2
     python3 client_grpc.py \
         --server-addr localhost \
         --model-name spark_tts \
         --num-tasks $num_task \
-        --log-dir ./log_${num_task}
+        --log-dir ./log_concurrent_tasks_${num_task}
 fi
 
 

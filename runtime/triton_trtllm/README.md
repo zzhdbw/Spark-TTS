@@ -36,8 +36,10 @@ python3 client_grpc.py --num-tasks $num_task --huggingface-dataset yuekai/seed_t
 ```
 
 ### Benchmark Results
-Decoding on a single L20 GPU, using 26 different prompt_audio/target_text pairs.
+Decoding on a single L20 GPU, using 26 different prompt_audio/target_text pairs, total audio duration 169 secs.
 
 | Model | Note   | Concurrency | Avg Latency     | RTF | 
 |-------|-----------|-----------------------|---------|--|
-| Spark-TTS-0.5B | [Code Commit]() | 4                   | 253 ms | 0.0394|
+| Spark-TTS-0.5B | [Code Commit]() | 1                   | 876.24 ms | 0.1362|
+| Spark-TTS-0.5B | [Code Commit]() | 2                   | 920.97 ms | 0.0737|
+| Spark-TTS-0.5B | [Code Commit]() | 4                   | 1611.51 ms | 0.0704|
