@@ -40,6 +40,6 @@ Decoding on a single L20 GPU, using 26 different prompt_audio/target_text pairs,
 
 | Model | Note   | Concurrency | Avg Latency     | RTF | 
 |-------|-----------|-----------------------|---------|--|
-| Spark-TTS-0.5B | [Code Commit]() | 1                   | 876.24 ms | 0.1362|
-| Spark-TTS-0.5B | [Code Commit]() | 2                   | 920.97 ms | 0.0737|
-| Spark-TTS-0.5B | [Code Commit]() | 4                   | 1611.51 ms | 0.0704|
+| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 1                   | 876.24 ms | 0.1362|
+| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 2                   | 920.97 ms | 0.0737|
+| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 4                   | 1611.51 ms | 0.0704|
