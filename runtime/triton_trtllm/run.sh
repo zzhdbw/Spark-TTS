@@ -22,7 +22,7 @@ fi
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
     echo "Converting checkpoint to TensorRT weights"
-    python scripts/convert_checkpoint.py --model_dir $huggingface_model_local_dir/LLM \
+    python convert_checkpoint.py --model_dir $huggingface_model_local_dir/LLM \
                                 --output_dir $trt_weights_dir \
                                 --dtype $trt_dtype || exit 1
 

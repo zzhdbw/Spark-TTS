@@ -1,6 +1,6 @@
 services:
   tts:
-    image: soar97/triton-f5-tts:24.12
+    image: soar97/triton-spark-tts:25.02
     shm_size: '1gb'
     ports:
       - "8000:8000"
