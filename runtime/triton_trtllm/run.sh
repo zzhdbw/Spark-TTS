@@ -1,5 +1,3 @@
-
-
 export PYTHONPATH=../../../Spark-TTS/
 export CUDA_VISIBLE_DEVICES=0
 stage=$1
@@ -68,9 +66,3 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
         --num-tasks $num_task \
         --log-dir ./log_concurrent_tasks_${num_task}
 fi
-
-
-
-
-
-
