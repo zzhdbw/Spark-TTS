@@ -16,25 +16,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This script supports to load manifest files in kaldi format and sends it to the server
+This script supports to load dataset from huggingface and sends it to the server
 for decoding, in parallel.
 
 Usage:
-# For offline F5-TTS
+# For offline Spark-TTS-0.5B
 # huggingface dataset
-dataset_name=yuekai/aishell
-subset_name=test
-split_name=test
-num_task=32
-python3 client.py \
-    --server-addr localhost \
-    --model-name infer_bls \
-    --num-tasks $num_task \
-    --text-prompt "<|startoftranscript|><|zh|><|transcribe|><|notimestamps|>" \
-    --huggingface_dataset $dataset_name \
-    --subset_name $subset_name \
-    --split_name $split_name \
-    --log-dir ./log_sherpa_multi_hans_whisper_large_ifb_$num_task
+    num_task=2
+    python3 client_grpc.py \
+        --server-addr localhost \
+        --model-name spark_tts \
+        --num-tasks $num_task \
+        --huggingface-dataset yuekai/seed_tts \
+        --split-name wenetspeech4tts \
+        --log-dir ./log_concurrent_tasks_${num_task}
 """
 
 import argparse
