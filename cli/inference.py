@@ -20,6 +20,7 @@ import torch
 import soundfile as sf
 import logging
 from datetime import datetime
+import platform
 
 from cli.SparkTTS import SparkTTS
 
@@ -69,7 +70,18 @@ def run_tts(args):
     os.makedirs(args.save_dir, exist_ok=True)
 
     # Convert device argument to torch.device
-    device = torch.device(f"cuda:{args.device}")
+    if platform.system() == "Darwin" and torch.backends.mps.is_available():
+        # macOS with MPS support (Apple Silicon)
+        device = torch.device(f"mps:{args.device}")
+        logging.info(f"Using MPS device: {device}")
+    elif torch.cuda.is_available():
+        # System with CUDA support
+        device = torch.device(f"cuda:{args.device}")
+        logging.info(f"Using CUDA device: {device}")
+    else:
+        # Fall back to CPU
+        device = torch.device("cpu")
+        logging.info("GPU acceleration not available, using CPU")
 
     # Initialize the model
     model = SparkTTS(args.model_dir, device)
