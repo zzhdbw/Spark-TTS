@@ -178,4 +178,4 @@ data/
 !data/2_encode_audio.py
 outputs/
 logs/
-*/unsloth_compiled_cache/*
+**/unsloth_compiled_cache/

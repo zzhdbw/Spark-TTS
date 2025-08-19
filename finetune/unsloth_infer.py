@@ -11,8 +11,9 @@ import torchaudio.transforms as T
 import locale
 import os
 import torch
-import sys
+
 import numpy as np
+import sys
 
 sys.path.append('Spark-TTS')
 
@@ -28,7 +29,7 @@ chosen_voice = "雪艳"  # None for single-speaker
 # @title Run Inference
 
 model, tokenizer = FastModel.from_pretrained(
-    model_name=f"/home/zzh/code/TTS/Spark-TTS/outputs/checkpoint-300",
+    model_name=f"/home/zzh/code/TTS/Spark-TTS/outputs/checkpoint-316",
     max_seq_length=2048,
     dtype=torch.float32,  # Spark seems to only work on float32 for now
     full_finetuning=True,  # We support full finetuning now!
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     if generated_waveform.size > 0:
         import soundfile as sf
 
-        output_filename = "generated_speech_controllable.wav"
+        output_filename = "outputs/generated_speech_controllable.wav"
         sample_rate = audio_tokenizer.config.get("sample_rate", 16000)
         sf.write(output_filename, generated_waveform, sample_rate)
         print(f"Audio saved to {output_filename}")
